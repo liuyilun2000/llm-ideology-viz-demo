@@ -1,10 +1,14 @@
-
-
 import {onWindowResize} from './env.js';
 import * as Animation from './animation.js';
+import * as Cube from './cube.js';
 
 window.addEventListener('resize', onWindowResize, false);
 
+// Add cleanup on page unload
+window.addEventListener('beforeunload', () => {
+    Animation.stopAnimation();
+    Cube.cleanup();
+});
 
 const intro = document.getElementById('intro');
 const phase0 = document.getElementsByClassName('phase0');

@@ -4,13 +4,21 @@ import * as Config from './config.js';
 import * as Data from './data.js';
 import {scene} from './env.js';
 
+// Shared geometry and materials for better performance
+const cubeGeometry = new THREE.BoxGeometry(Config.cubeSize, Config.cubeSize, Config.cubeSize);
+const materials = new Map();
 
 export function activationColor(activation) {
-	//let c1 = new THREE.Color('rgba(200,20,40,0.2)')
-	//let c2 = new THREE.Color('rgba(20,200,40,1)') 
-	//let color = new THREE.Color().lerpColors(c1, c2, activation);
-	let color = new THREE.Color().setHSL(activation * 0.4, 0.4, 0.4);
-	return color;
+	const key = Math.round(activation * 100) / 100; // Round to 2 decimal places
+	if (!materials.has(key)) {
+		const color = new THREE.Color().setHSL(activation * 0.4, 0.4, 0.4);
+		materials.set(key, new THREE.MeshBasicMaterial({
+			color: color,
+			transparent: true,
+			opacity: activationOpacity(activation)
+		}));
+	}
+	return materials.get(key);
 }
 
 export function activationOpacity(activation) {
@@ -29,17 +37,9 @@ export function calculateCubePosition(i, j, k) {
 
 
 function createCube(i, j, k, color, opacity) {
-	const geometry = new THREE.BoxGeometry(Config.cubeSize, Config.cubeSize, Config.cubeSize); // Cube geometry
-	const material = new THREE.MeshBasicMaterial({
-		color: color,
-		transparent: true,
-		opacity: opacity
-	});
-	const cube = new THREE.Mesh(geometry, material);
-
-	// Set initial random positions far from the center
+	const material = activationColor(color);
+	const cube = new THREE.Mesh(cubeGeometry, material);
 	cube.position.copy(calculateCubePosition(i, j, k));
-	
 	return cube;
 }
 
@@ -126,3 +126,26 @@ export function driftCubes() {
 		}
 	}
 };
+
+// Cleanup function to dispose of resources
+export function cleanup() {
+	cubeGeometry.dispose();
+	materials.forEach(material => material.dispose());
+	materials.clear();
+	
+	// Remove all cubes from scene
+	cubes.forEach(layer => {
+		layer.forEach(neuron => {
+			neuron.forEach(cube => {
+				scene.remove(cube);
+			});
+		});
+	});
+	
+	// Clear arrays
+	cubes.length = 0;
+	SPCubes.length = 0;
+	INCubes.length = 0;
+	maxCubes.length = 0;
+	nonMaxCubes.length = 0;
+}

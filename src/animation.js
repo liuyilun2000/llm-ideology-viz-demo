@@ -7,40 +7,43 @@ import * as Cube from './cube.js';
 import * as Sprite from './sprite.js';
 import * as Config from './config.js';
 
+let animationFrameId = null;
+
 // Animation function
 export function animate() {
-	requestAnimationFrame(animate);
-	// Drift cubes if drifting is true
 	if (isDrifting) Cube.driftCubes();
 	updateBloomEffect();
 	controls.update();
 	composer.render();
-};
+	animationFrameId = requestAnimationFrame(animate);
+}
 
-
-
-
+export function stopAnimation() {
+	if (animationFrameId) {
+		cancelAnimationFrame(animationFrameId);
+		animationFrameId = null;
+	}
+}
 
 let isDrifting = true;
 
 export function startRotating() {
-    controls.autoRotate = true; 
-    controls.autoRotateSpeed = 0; 
-    const duration = 3000; 
-    const maxRotateSpeed = 0.5; 
-    const startTime = Date.now();
+	controls.autoRotate = true; 
+	controls.autoRotateSpeed = 0; 
+	const duration = 3000; 
+	const maxRotateSpeed = 0.5; 
+	const startTime = Date.now();
 
-    function increaseRotationSpeed() {
-        const elapsedTime = Date.now() - startTime;
-        const fraction = Math.min(elapsedTime / duration, 1); 
-        controls.autoRotateSpeed = maxRotateSpeed * Utils.easeInCubic(fraction); 
+	function increaseRotationSpeed() {
+		const elapsedTime = Date.now() - startTime;
+		const fraction = Math.min(elapsedTime / duration, 1); 
+		controls.autoRotateSpeed = maxRotateSpeed * Utils.easeInCubic(fraction); 
 
-        if (fraction < 1) requestAnimationFrame(increaseRotationSpeed);
-    }
+		if (fraction < 1) requestAnimationFrame(increaseRotationSpeed);
+	}
 
-    increaseRotationSpeed(); 
+	increaseRotationSpeed(); 
 };
-
 
 export function startAnimation() {
 	isDrifting = false; 
@@ -64,14 +67,14 @@ export function startAnimation() {
 						const currentPosition = startPosition.clone().lerp(endPosition, fraction);
 						cube.position.copy(currentPosition);
 						requestAnimationFrame(animatePosition);
-                        Sprite.updateSpriteOpacity(Sprite.tokenSprites, fraction);
-                        Sprite.updateSpriteOpacity(Sprite.neuronSprites, fraction);
-                        Sprite.updateSpriteOpacity(Sprite.layerSprites, fraction);
+						Sprite.updateSpriteOpacity(Sprite.tokenSprites, fraction);
+						Sprite.updateSpriteOpacity(Sprite.neuronSprites, fraction);
+						Sprite.updateSpriteOpacity(Sprite.layerSprites, fraction);
 					} else {
 						cube.position.copy(endPosition);
-                        Sprite.updateSpriteOpacity(Sprite.tokenSprites, 1);
-                        Sprite.updateSpriteOpacity(Sprite.neuronSprites, 1);
-                        Sprite.updateSpriteOpacity(Sprite.layerSprites, 1);
+						Sprite.updateSpriteOpacity(Sprite.tokenSprites, 1);
+						Sprite.updateSpriteOpacity(Sprite.neuronSprites, 1);
+						Sprite.updateSpriteOpacity(Sprite.layerSprites, 1);
 					}
 				};
 
@@ -81,13 +84,12 @@ export function startAnimation() {
 	});
 };
 
-
 export function startPoolingAnimation() {
 	isDrifting = false; 
 	const startTime = Date.now();
-    const duration = 2000; // milliseconds for first transition (fade out)
-    const moveDuration = 4000; // milliseconds for second transition (move to z=0)
-    let stage = 1; // Track the animation stage
+	const duration = 2000; // milliseconds for first transition (fade out)
+	const moveDuration = 4000; // milliseconds for second transition (move to z=0)
+	let stage = 1; // Track the animation stage
 	let moveStartTime = 0;
 
 	function update() {
@@ -118,24 +120,24 @@ export function startPoolingAnimation() {
 			});
 
 			if (fraction === 1) {
-                if (Cube.nonMaxCubes.length > 0) Cube.nonMaxCubes.length = 0; 
+				if (Cube.nonMaxCubes.length > 0) Cube.nonMaxCubes.length = 0; 
 				stage = 2; // Move to next stage
-                moveStartTime = Date.now(); // Record start time for move animation
-            }
-        }
+				moveStartTime = Date.now(); // Record start time for move animation
+			}
+		}
 
-        if (stage === 2) {
-            // Second stage: Move maxCubes to z=0
-            const moveElapsedTime = Date.now() - moveStartTime;
-            let moveFraction = Math.min(moveElapsedTime / moveDuration, 1);
-            moveFraction = Utils.easeInOutCubic(moveFraction); // Apply ease-out effect
+		if (stage === 2) {
+			// Second stage: Move maxCubes to z=0
+			const moveElapsedTime = Date.now() - moveStartTime;
+			let moveFraction = Math.min(moveElapsedTime / moveDuration, 1);
+			moveFraction = Utils.easeInOutCubic(moveFraction); // Apply ease-out effect
 
-            Cube.maxCubes.forEach(entry => {
-                const cube = entry.cube;
-                const zTarget = 0;
-                const zStart = cube.position.z;
-                cube.position.z = zStart + (zTarget - zStart) * moveFraction;
-            });
+			Cube.maxCubes.forEach(entry => {
+				const cube = entry.cube;
+				const zTarget = 0;
+				const zStart = cube.position.z;
+				cube.position.z = zStart + (zTarget - zStart) * moveFraction;
+			});
 			
 			//Sprite.updateSpriteOpacity(Sprite.tokenSprites, 1 - moveFraction);
 			const moveSprites = (sprites, fadeOut = false) => {
@@ -156,10 +158,9 @@ export function startPoolingAnimation() {
 			moveSprites(Sprite.tokenSprites, true);
 
 			if (moveFraction === 1) {
-                stage = 3; // Animation complete, no further updates needed
-            }
-        }
-
+				stage = 3; // Animation complete, no further updates needed
+			}
+		}
 
 		if (stage !== 3) {
 			requestAnimationFrame(update);
@@ -168,8 +169,6 @@ export function startPoolingAnimation() {
 
 	update();
 };
-
-
 
 function getSplinePoints(numPoints, p1, p2){
 	const points = []
@@ -189,16 +188,14 @@ function getSplinePoints(numPoints, p1, p2){
 	return points;
 }
 
-
-
 const splines = []
 
 export function startProbeAnimation() {
 	for (let i = 0; i < Config.dimensions.layer; i++) {
-        setTimeout(() => {
+		setTimeout(() => {
 			scene.add(Cube.SPCubes[i]);
-            fadeElement(Cube.SPCubes[i], 400, 0, 0.64);
-        }, i * 20 * Config.dimensions.neuron); 
+			fadeElement(Cube.SPCubes[i], 400, 0, 0.64);
+		}, i * 20 * Config.dimensions.neuron); 
 	}
 	Cube.maxCubes.forEach((maxCube, index) => {
 		const cube = maxCube.cube;
@@ -226,27 +223,30 @@ export function startProbeAnimation() {
 			endPosition: endPosition
 		 });
 
-        setTimeout(() => {
-            scene.add(tubeMesh);
-            fadeElement(tubeMesh, 200, 0, Math.random()*0.5);
-        }, index * 20); 
+		setTimeout(() => {
+			scene.add(tubeMesh);
+			fadeElement(tubeMesh, 200, 0, Math.random()*0.5);
+		}, index * 20); 
 	});
 };
 
-
-
 function fadeElement(element, duration, fromOpacity, toOpacity) {
-    const startTime = Date.now();
-    function update() {
-        const currentTime = Date.now();
-        const elapsedTime = currentTime - startTime;
-        const fraction = Math.min(elapsedTime / duration, 1); 
-        element.material.opacity = Utils.easeInOutCubic(fraction) * (toOpacity - fromOpacity) + fromOpacity;
-        if (fraction < 1) {
-            requestAnimationFrame(update);
-        }
-    }    
-    if (fromOpacity != toOpacity) {
+	const startTime = Date.now();
+	let animationFrameId = null;
+
+	function update() {
+		const currentTime = Date.now();
+		const elapsedTime = currentTime - startTime;
+		const fraction = Math.min(elapsedTime / duration, 1); 
+		element.material.opacity = Utils.easeInOutCubic(fraction) * (toOpacity - fromOpacity) + fromOpacity;
+		if (fraction < 1) {
+			animationFrameId = requestAnimationFrame(update);
+		} else {
+			cancelAnimationFrame(animationFrameId);
+		}
+	}    
+	
+	if (fromOpacity != toOpacity) {
 		update();
 	}
 }
@@ -255,9 +255,9 @@ const salientSplines = [];
 export function startSparsifyAnimation() {
 	/*
 	for (let i = 0; i < Config.dimensions.layer; i++) {
-        setTimeout(() => {
+		setTimeout(() => {
 			fadeElement(Cube.SPCubes[i], 400, 0.64, 0);
-        }, i * 20 * Config.dimensions.neuron); 
+		}, i * 20 * Config.dimensions.neuron); 
 	}*/
 	splines.forEach((spline, index) => {
 		const cube = spline.cube;
@@ -284,43 +284,41 @@ export function startSparsifyAnimation() {
 	});
 };
 
-
 function animateSplineMovement(startPoint, endPoint, duration, updateCallback) {
-    const startTime = Date.now();
-    
-    function update() {
-        const currentTime = Date.now();
-        const elapsedTime = currentTime - startTime;
-        const fraction = Math.min(elapsedTime / duration, 1); // Clamp fraction to 1
-        
-        const easedFraction = Utils.easeInOutCubic(fraction);
-        const currentPoint = new THREE.Vector3(
-            startPoint.x + (endPoint.x - startPoint.x) * easedFraction,
-            startPoint.y + (endPoint.y - startPoint.y) * easedFraction,
-            startPoint.z + (endPoint.z - startPoint.z) * easedFraction
-        );
-        
-        updateCallback(currentPoint);
-        
-        if (fraction < 1) {
-            requestAnimationFrame(update);
-        }
-    }    
-    if (startPoint != endPoint) {
+	const startTime = Date.now();
+	
+	function update() {
+		const currentTime = Date.now();
+		const elapsedTime = currentTime - startTime;
+		const fraction = Math.min(elapsedTime / duration, 1); // Clamp fraction to 1
+		
+		const easedFraction = Utils.easeInOutCubic(fraction);
+		const currentPoint = new THREE.Vector3(
+			startPoint.x + (endPoint.x - startPoint.x) * easedFraction,
+			startPoint.y + (endPoint.y - startPoint.y) * easedFraction,
+			startPoint.z + (endPoint.z - startPoint.z) * easedFraction
+		);
+		
+		updateCallback(currentPoint);
+		
+		if (fraction < 1) {
+			requestAnimationFrame(update);
+		}
+	}    
+	if (startPoint != endPoint) {
 		update();
 	}
 }
 
-
 export function startIntegrateAnimation() {
 	salientSplines.forEach((spline, index) => {
 		fadeElement(spline.tubeMesh, 1000, spline.tubeMesh.material.opacity, 0.12);
-        setTimeout(() => {
+		setTimeout(() => {
 			fadeElement(spline.spCube, 400, 0.64, 0);
-        }, index * 10); 
+		}, index * 10); 
 	});
 	for (let i = 0; i < Config.dimensions.layer; i++) {
-        setTimeout(() => {
+		setTimeout(() => {
 			salientSplines.forEach(spline => {
 				if (spline.i < i) {
 					fadeElement(spline.tubeMesh, 200, spline.tubeMesh.material.opacity, 0.5 - 0.2 * i / Config.dimensions.layer);
@@ -338,11 +336,11 @@ export function startIntegrateAnimation() {
 					fadeElement(spline.tubeMesh, 200, spline.tubeMesh.material.opacity, 0.5 - 0.2 * i / Config.dimensions.layer);
 				}
 			});	
-        }, (i+1) * 1000); 
-        setTimeout(() => {
+		}, (i+1) * 1000); 
+		setTimeout(() => {
 			scene.add(Cube.INCubes[i]);
 			fadeElement(Cube.INCubes[i], 200, 0, 0.8);
-        }, (i+1) * 1000); 
+		}, (i+1) * 1000); 
 		if (i < Config.dimensions.layer - 1) {
 			setTimeout(() => {
 				fadeElement(Cube.INCubes[i], 500, 0.64, 0.24);
